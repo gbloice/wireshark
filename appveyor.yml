@@ -1,0 +1,126 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+version: build{build}
+
+branches:
+  only:
+    - appveyor
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker template
+image: Visual Studio 2013
+
+# clone directory
+clone_folder: c:\projects\wireshark
+
+# Only clone the top level commit; don't bother with history
+shallow_clone: true
+
+environment:
+  # Set common variables
+  CYGWIN: nodosfilewarning
+  WIRESHARK_CYGWIN_INSTALL_PATH: C:\Cygwin
+  WIRESHARK_BASE_DIR: C:\Projects
+  WIRESHARK_VERSION_EXTRA: -Appveyor
+
+# build cache to preserve files/folders between builds, the 3rd-party libs and chocolatey stuff
+cache:
+  - '%WIRESHARK_BASE_DIR%wireshark-win32-libs'
+  - '%WIRESHARK_BASE_DIR%wireshark-win64-libs'
+  - C:\ProgramData\chocolatey\bin
+  - C:\ProgramData\chocolatey\lib
+
+# Things we have to install
+install:
+  - echo install step
+  - cinst winflexbison3
+  # Need some cygwin packages; asdciidoc, docbook-xml45
+  - C:\cygwin\setup-x86.exe -qnNdO -R C:/cygwin -s http://cygwin.mirror.constant.com -l C:/cygwin/var/cache/setup -P asciidoc -P docbook-xml45
+
+  # Temporarily list the Cygwin packages
+  #- echo ***** Listing the Cygwin packages *****
+  #- c:\Cygwin\bin\cygcheck -c
+  #- echo ***** End of listing the Cygwin packages *****
+
+  # Temporarily list the Cygwin package contents
+  #- echo ***** Listing the Cygwin files *****
+  #- C:\Cygwin\bin\cygcheck -l
+  #- echo ***** end of listing the Cygwin files *****
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build platform
+platform:
+  - x86
+  - x64
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: RelWithDebInfo
+
+init:
+  - echo init step
+
+  # enable rdp
+  #- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+  # Set the path to put Cygwin bin dir at the front, this hides the git tools
+  - ps: $env:PATH = "C:\Cygwin\bin;" + $env:PATH
+
+  # Set the platform specfic vars
+  - ps: >
+      if ($env:platform -eq 'x86') {
+        $env:QT5_BASE_DIR = 'C:\Qt\5.6\msvc2013'
+        $env:WIRESHARK_TARGET_PLATFORM = 'win32'
+        $env:DO_CMAKE = "-G `"Visual Studio 12`" $env:APPVEYOR_BUILD_FOLDER"
+        $env:VCVARS = "x86"
+        $env:SLN_PLATFORM = "Win32"
+      }
+      elseif ($env:platform -eq 'x64') {
+        $env:QT5_BASE_DIR = 'C:\Qt\5.6\msvc2013_64'
+        $env:WIRESHARK_TARGET_PLATFORM = 'win64'
+        $env:DO_CMAKE = "-G `"Visual Studio 12 Win64`" $env:APPVEYOR_BUILD_FOLDER"
+        $env:VCVARS = "amd64"
+        $env:SLN_PLATFORM = "x64"
+      }
+      true
+
+  # set VS vars for build
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" %VCVARS%
+
+# scripts to run before build, i.e. configure steps
+before_build:
+  # Create the build directory and run cmake
+  - echo before_build step
+  - ps: $BUILD_DIR = Join-Path C:\projects\ $env:WIRESHARK_TARGET_PLATFORM
+  - ps: New-Item $BUILD_DIR -ItemType "directory"
+  - ps: cd $BUILD_DIR
+  - cmake %DO_CMAKE%
+
+# to run custom script instead of automatic MSBuild
+build_script:
+  - echo build_script step
+  - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" Wireshark.sln
+  #- msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" docbook\release_notes_html.vcxproj
+
+# scripts to run *after* solution is built and *before* automatic packaging occurs (web apps, NuGet packages, Azure Cloud Services)
+before_package:
+
+# scripts to run after build
+after_build:
+
+#---------------------------------#
+#         notifications           #
+#---------------------------------#
+
+#notifications:
+
+# Enable RDP on finish
+on_finish:
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
