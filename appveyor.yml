@@ -75,21 +75,22 @@ init:
 
   # Set the platform specfic vars
   - ps: >
+      $env:DO_CMAKE = "-DENABLE_CHM_GUIDES "
       if ($env:platform -eq 'x86') {
         $env:QT5_BASE_DIR = 'C:\Qt\5.6\msvc2013'
         $env:WIRESHARK_TARGET_PLATFORM = 'win32'
-        $env:DO_CMAKE = "-G `"Visual Studio 12`" $env:APPVEYOR_BUILD_FOLDER"
+        $env:DO_CMAKE += "-G `"Visual Studio 12`""
         $env:VCVARS = "x86"
         $env:SLN_PLATFORM = "Win32"
       }
       elseif ($env:platform -eq 'x64') {
         $env:QT5_BASE_DIR = 'C:\Qt\5.6\msvc2013_64'
         $env:WIRESHARK_TARGET_PLATFORM = 'win64'
-        $env:DO_CMAKE = "-G `"Visual Studio 12 Win64`" $env:APPVEYOR_BUILD_FOLDER"
+        $env:DO_CMAKE = "-G `"Visual Studio 12 Win64`""
         $env:VCVARS = "amd64"
         $env:SLN_PLATFORM = "x64"
       }
-      true
+      $env:DO_CMAKE += " $env:APPVEYOR_BUILD_FOLDER"
 
   # set VS vars for build
   - call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" %VCVARS%
@@ -107,7 +108,8 @@ before_build:
 build_script:
   - echo build_script step
   - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" Wireshark.sln
-  #- msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" docbook\release_notes_html.vcxproj
+  - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" nsis_package_prep.vcxproj
+  - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" nsis_package.vcxproj
 
 # scripts to run *after* solution is built and *before* automatic packaging occurs (web apps, NuGet packages, Azure Cloud Services)
 before_package:
