@@ -93,8 +93,8 @@ init:
         $env:SLN_PLATFORM = "x64"
       }
 
-    # Append the build directory
-    - ps: $env:DO_CMAKE += " $env:APPVEYOR_BUILD_FOLDER"
+  # Append the build directory
+  - ps: $env:DO_CMAKE += " $env:APPVEYOR_BUILD_FOLDER"
 
   # set VS vars for build
   - call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" %VCVARS%
