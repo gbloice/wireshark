@@ -38,19 +38,8 @@ cache:
 # Things we have to install
 install:
   - echo install step
-  - cinst winflexbison3
   # Need some cygwin packages; asdciidoc, docbook-xml45
   - C:\cygwin\setup-x86.exe -qnNdO -R C:/cygwin -s http://cygwin.mirror.constant.com -l C:/cygwin/var/cache/setup -P asciidoc -P docbook-xml45
-
-  # Temporarily list the Cygwin packages
-  #- echo ***** Listing the Cygwin packages *****
-  #- c:\Cygwin\bin\cygcheck -c
-  #- echo ***** End of listing the Cygwin packages *****
-
-  # Temporarily list the Cygwin package contents
-  #- echo ***** Listing the Cygwin files *****
-  #- C:\Cygwin\bin\cygcheck -l
-  #- echo ***** end of listing the Cygwin files *****
 
 #---------------------------------#
 #       build configuration       #
@@ -74,7 +63,7 @@ init:
   - ps: $env:PATH = "C:\Cygwin\bin;" + $env:PATH
 
   # Set the platform agnostic CMake options
-  - ps: $env:DO_CMAKE = "-DENABLE_CHM_GUIDES "
+  - ps: $env:DO_CMAKE = "-DENABLE_CHM_GUIDES=on "
 
   # Set the platform specfic vars
   - ps: >
