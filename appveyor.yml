@@ -116,7 +116,7 @@ after_build:
 #---------------------------------#
 
 artifacts:
-  - path: '%APPVEYOR_BUILD_FOLDER%\packaging\nsis\*.exe'
+  - path: '\packaging\nsis\*.exe'
     name: Appveyor_build%SLN_PLATFORM%
 
 #---------------------------------#
