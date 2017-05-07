@@ -37,7 +37,7 @@ cache:
 
 # Things we have to install
 install:
-  - echo install step
+  - @echo install packages step
   # Need some cygwin packages; asdciidoc, docbook-xml45
   - C:\cygwin\setup-x86.exe -qnNdO -R C:/cygwin -s http://cygwin.mirror.constant.com -l C:/cygwin/var/cache/setup -P asciidoc -P docbook-xml45
 
@@ -54,7 +54,7 @@ platform:
 configuration: RelWithDebInfo
 
 init:
-  - echo init step
+  - @echo init step
 
   # enable rdp
   #- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
@@ -77,7 +77,7 @@ init:
       elseif ($env:platform -eq 'x64') {
         $env:QT5_BASE_DIR = 'C:\Qt\5.6\msvc2013_64'
         $env:WIRESHARK_TARGET_PLATFORM = 'win64'
-        $env:DO_CMAKE = "-G `"Visual Studio 12 Win64`""
+        $env:DO_CMAKE += "-G `"Visual Studio 12 Win64`""
         $env:VCVARS = "amd64"
         $env:SLN_PLATFORM = "x64"
       }
@@ -91,15 +91,16 @@ init:
 # scripts to run before build, i.e. configure steps
 before_build:
   # Create the build directory and run cmake
-  - echo before_build step
+  - @echo before_build step
   - ps: $BUILD_DIR = Join-Path C:\projects\ $env:WIRESHARK_TARGET_PLATFORM
   - ps: New-Item $BUILD_DIR -ItemType "directory"
   - ps: cd $BUILD_DIR
+  - @each CMake command: %DO_CMAKE%
   - cmake %DO_CMAKE%
 
 # to run custom script instead of automatic MSBuild
 build_script:
-  - echo build_script step
+  - @echo build_script step
   - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" Wireshark.sln
   - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" nsis_package_prep.vcxproj
   - msbuild /m /p:Configuration=RelWithDebInfo /p:platform=%SLN_PLATFORM% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" nsis_package.vcxproj
@@ -109,6 +110,14 @@ before_package:
 
 # scripts to run after build
 after_build:
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+  - path: %APPVEYOR_BUILD_FOLDER%\packaging\nsis\*.exe
+    name: Appveyor_build%SLN_PLATFORM%
 
 #---------------------------------#
 #         notifications           #
